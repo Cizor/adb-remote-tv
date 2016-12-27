@@ -1,0 +1,392 @@
+#!/usr/bin/python
+
+#Remote Application using Python Gtk3+
+#Initial Revision: Developed and Designed for LeTV boards with preconfigured keys 
+#To Be Done:
+# Add ADB detection support
+# Add VDS support
+# Launch apps directly from keys
+# Key configuration menu for different key codes, which will be helpful to make this application useful in almost all android based platforms
+# Remove Terminal dependency to test on boards
+# Map all key codes using variables
+#Make it sensitive to process threads of app and service i.e. if any process is killed, we get a notification and proper screen
+					#is displayed to tackle it
+# Make it Universal Remote :)
+
+import gi
+import signal
+import os
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, Gio, Pango, Gdk
+from subprocess import call
+from subprocess import check_output 
+
+class Remote(Gtk.Window):
+
+	def __init__(self):
+		Gtk.Window.__init__(self,title="Remote")
+		self.set_border_width(10)
+		
+		superbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+		headlabel = Gtk.Label("LeTV Remote")
+		headlabel.modify_font(Pango.FontDescription('Arial Black'))
+		superbox.pack_start(headlabel,True,True,1)
+
+#Creating buttons and assigning labels
+		button1 = Gtk.Button(label = "1")
+		button2 = Gtk.Button(label = "2")
+		button3 = Gtk.Button(label = "3")
+		button4 = Gtk.Button(label = "4")
+		button5 = Gtk.Button(label = "5")
+		button6 = Gtk.Button(label = "6")
+		button7 = Gtk.Button(label = "7")
+		button8 = Gtk.Button(label = "8")
+		button9 = Gtk.Button(label = "9")
+		button0 = Gtk.Button(label = "0")
+		buttonEPG = Gtk.Button(label = "EPG")
+		buttonMau = Gtk.Button(label = "MulAudio List")
+		buttonServList = Gtk.Button(label = "Serv List")
+		buttonChanUp = Gtk.Button(label = u"\u2795")
+		buttonChanDown = Gtk.Button(label = u"\u2796")
+		buttonCCLang = Gtk.Button(label = "CC Lang")
+		buttonDelete = Gtk.Button(label = "Delete")
+		buttonRename = Gtk.Button(label = "Rename")
+		buttonSort = Gtk.Button(label = "Sort")
+		buttonSkip = Gtk.Button(label = "Skip")
+		buttonBanner = Gtk.Button(label = "Banner")
+		buttonOK = Gtk.Button(label = "OK")
+		buttonUp = Gtk.Button(label = u"\u21E7")
+		buttonDown = Gtk.Button(label = u"\u21E9")
+		buttonRight = Gtk.Button(label = u"\u21E8")
+		buttonLeft = Gtk.Button(label = u"\u21E6")
+		buttonVolUp = Gtk.Button(label = u'\u25B2' )
+		buttonVolDown = Gtk.Button(label = u'\u25BC')
+		buttonBack = Gtk.Button(label = "Ret")
+		buttonMainMenu = Gtk.Button(label = "MM")
+		buttonYellow = Gtk.Button(label = "Y")
+		buttonBlue = Gtk.Button(label = "B")
+		buttonGreen = Gtk.Button(label = "G")
+		buttonRed = Gtk.Button(label = "R")
+
+#Number 1,2,3 Button Box		
+		buttonbox = Gtk.ButtonBox()
+		buttonbox.add(buttonYellow)
+		buttonYellow.connect("clicked", self.on_ButtonYellow_clicked)
+		buttonbox.add(buttonBlue)
+		buttonBlue.connect("clicked", self.on_ButtonBlue_clicked)
+		buttonbox.add(buttonGreen)
+		buttonGreen.connect("clicked", self.on_ButtonGreen_clicked)
+		buttonbox.add(buttonRed)
+		buttonRed.connect("clicked", self.on_ButtonRed_clicked)
+
+		superbox.pack_start(buttonbox,False,True,1)
+
+#Number 1,2,3 Button Box		
+		buttonbox = Gtk.ButtonBox()
+		buttonbox.add(button1)
+		button1.connect("clicked", self.on_Button1_clicked)
+		buttonbox.add(button2)
+		button2.connect("clicked", self.on_Button2_clicked)
+		buttonbox.add(button3)
+		button3.connect("clicked", self.on_Button3_clicked)
+
+		superbox.pack_start(buttonbox,False,True,1)
+
+#Number 4,5,6 Button Box		
+		buttonbox = Gtk.ButtonBox()
+		buttonbox.add(button4)
+		button4.connect("clicked", self.on_Button4_clicked)
+		buttonbox.add(button5)
+		button5.connect("clicked", self.on_Button5_clicked)
+		buttonbox.add(button6)
+		button6.connect("clicked", self.on_Button6_clicked)
+
+		superbox.pack_start(buttonbox,False,True,1)
+
+#Number 7,8,9 Button Box		
+		buttonbox = Gtk.ButtonBox()
+		buttonbox.add(button7)
+		button7.connect("clicked", self.on_Button7_clicked)
+		buttonbox.add(button8)
+		button8.connect("clicked", self.on_Button8_clicked)
+		buttonbox.add(button9)
+		button9.connect("clicked", self.on_Button9_clicked)
+
+		superbox.pack_start(buttonbox,False,True,1)
+
+#Number EPG, 0 , ServiceList Button Box		
+		buttonbox = Gtk.ButtonBox()
+		buttonbox.add(buttonEPG)
+		buttonEPG.connect("clicked", self.on_ButtonEPG_clicked)
+		buttonbox.add(button0)
+		button0.connect("clicked", self.on_Button0_clicked)
+		buttonbox.add(buttonServList)
+		buttonServList.connect("clicked", self.on_ButtonServList_clicked)
+
+		superbox.pack_start(buttonbox,False,True,1)
+#Banner Key
+		buttonbox = Gtk.ButtonBox()
+		buttonbox.add(buttonBanner)
+		buttonBanner.connect("clicked", self.on_ButtonBanner_clicked)
+		superbox.pack_start(buttonbox,False,True,1)
+
+#Channel Up, Volume Up Keys
+		buttonbox = Gtk.ButtonBox()
+		buttonbox.add(buttonVolUp)
+		buttonVolUp.connect("clicked", self.on_ButtonVolUp_clicked)
+		buttonbox.add(buttonChanUp)
+		buttonChanUp.connect("clicked", self.on_ButtonChanUp_clicked)
+
+		superbox.pack_start(buttonbox,False,True,1)
+
+#Channel Down, Volume Down Keys
+		buttonbox = Gtk.ButtonBox()
+		buttonbox.add(buttonVolDown)
+		buttonVolDown.connect("clicked", self.on_ButtonVolDown_clicked)
+		buttonbox.add(buttonChanDown)
+		buttonChanDown.connect("clicked", self.on_ButtonChanDown_clicked)
+
+		superbox.pack_start(buttonbox,False,True,1)
+
+#Navigation, OK, Main Menu and Return Keys
+		buttonbox = Gtk.ButtonBox()
+		color = Gdk.color_parse('#234fdb')
+		buttonUp.modify_bg(Gtk.StateType.PRELIGHT, color)
+		buttonbox.add(buttonUp)
+		buttonUp.connect("clicked", self.on_ButtonUp_clicked)
+		superbox.pack_start(buttonbox,False,True,1)
+		buttonbox = Gtk.ButtonBox()
+		buttonbox.add(buttonLeft)
+		buttonLeft.connect("clicked", self.on_ButtonLeft_clicked)
+		buttonbox.add(buttonOK)
+		buttonOK.connect("clicked", self.on_ButtonOK_clicked)
+		buttonbox.add(buttonRight)
+		buttonRight.connect("clicked", self.on_ButtonRight_clicked)
+		superbox.pack_start(buttonbox,False,True,1)
+
+		buttonbox = Gtk.ButtonBox()
+		buttonbox.add(buttonMainMenu)
+		buttonMainMenu.connect("clicked", self.on_ButtonMainMenu_clicked)
+		buttonbox.add(buttonDown)
+		buttonDown.connect("clicked", self.on_ButtonDown_clicked)
+		buttonbox.add(buttonBack)
+		buttonBack.connect("clicked", self.on_ButtonBack_clicked)
+		superbox.pack_start(buttonbox,False,True,1)
+
+#Label for Direct Keys
+		label = Gtk.Label("Direct Keys to specific features")
+		superbox.pack_start(label,False,True,1)
+#CC Language, Multi Audio List, Sort Keys		
+		buttonbox = Gtk.ButtonBox()
+		buttonbox.add(buttonCCLang)
+		buttonCCLang.connect("clicked", self.on_ButtonCCLang_clicked)
+		buttonbox.add(buttonMau)
+		buttonMau.connect("clicked", self.on_ButtonMau_clicked)
+		buttonbox.add(buttonSort)
+		buttonSort.connect("clicked", self.on_ButtonSort_clicked)
+		superbox.pack_start(buttonbox,False,True,1)
+
+		self.add(superbox)
+#Delete, Rename, Skip Keys		
+		buttonbox = Gtk.ButtonBox()
+		buttonbox.add(buttonDelete)
+		buttonDelete.connect("clicked", self.on_ButtonDelete_clicked)
+		buttonbox.add(buttonRename)
+		buttonRename.connect("clicked", self.on_ButtonRename_clicked)
+		buttonbox.add(buttonSkip)
+		buttonSkip.connect("clicked", self.on_ButtonSkip_clicked)
+
+		superbox.pack_start(buttonbox,False,True,1)
+
+#Functions for click events on all buttons
+	def on_Button0_clicked(self,widget):
+		call(["adb","shell","input","keyevent","7"])
+
+	def on_Button1_clicked(self,widget):
+		call(["adb","shell","input","keyevent","8"])
+
+	def on_Button2_clicked(self,widget):
+		call(["adb","shell","input","keyevent","9"])
+
+	def on_Button3_clicked(self,widget):
+		call(["adb","shell","input","keyevent","10"])
+
+	def on_Button4_clicked(self,widget):
+		call(["adb","shell","input","keyevent","11"])
+
+	def on_Button5_clicked(self,widget):
+		call(["adb","shell","input","keyevent","12"])
+
+	def on_Button6_clicked(self,widget):
+		call(["adb","shell","input","keyevent","13"])
+
+	def on_Button7_clicked(self,widget):
+		call(["adb","shell","input","keyevent","14"])
+
+	def on_Button8_clicked(self,widget):
+		call(["adb","shell","input","keyevent","15"])
+
+	def on_Button9_clicked(self,widget):
+		call(["adb","shell","input","keyevent","16"])
+
+	def on_ButtonEPG_clicked(self,widget):
+		call(["adb","shell","input","keyevent","4403"])
+
+	def on_ButtonMau_clicked(self,widget):
+		call(["adb","shell","input","keyevent","170"])
+
+	def on_ButtonServList_clicked(self,widget):
+		call(["adb","shell","input","keyevent","4436"])
+
+	def on_ButtonChanUp_clicked(self,widget):
+		call(["adb","shell","input","keyevent","166"])
+
+	def on_ButtonChanDown_clicked(self,widget):
+		call(["adb","shell","input","keyevent","167"])
+
+	def on_ButtonCCLang_clicked(self,widget):
+		call(["adb","shell","input","keyevent","4401"])
+
+	def on_ButtonDelete_clicked(self,widget):
+		call(["adb","shell","input","keyevent","4436"])
+		call(["adb","shell","input","keyevent","4401"])
+
+	def on_ButtonRename_clicked(self,widget):
+		call(["adb","shell","input","keyevent","4436"])
+		call(["adb","shell","input","keyevent","4402"])
+
+	def on_ButtonSkip_clicked(self,widget):
+		call(["adb","shell","input","keyevent","4436"])
+		call(["adb","shell","input","keyevent","170"])
+
+	def on_ButtonSort_clicked(self,widget):
+		call(["adb","shell","input","keyevent","4436"])
+		call(["adb","shell","input","keyevent","4402"])
+
+	def on_ButtonBanner_clicked(self,widget):
+		call(["adb","shell","input","keyevent","165"])
+
+	def on_ButtonOK_clicked(self,widget):
+		call(["adb","shell","input","keyevent","23"])
+
+	def on_ButtonUp_clicked(self,widget):
+		call(["adb","shell","input","keyevent","19"])
+
+	def on_ButtonDown_clicked(self,widget):
+		#call(["adb","shell","input","keyevent","20"])
+		os.system("adb shell input keyevent 20")
+
+	def on_ButtonRight_clicked(self,widget):
+		call(["adb","shell","input","keyevent","22"])
+
+	def on_ButtonLeft_clicked(self,widget):
+		call(["adb","shell","input","keyevent","21"])
+
+	def on_ButtonVolUp_clicked(self,widget):
+		call(["adb","shell","input","keyevent","24"])
+
+	def on_ButtonVolDown_clicked(self,widget):
+		call(["adb","shell","input","keyevent","25"])
+
+	def on_ButtonBack_clicked(self,widget):
+		call(["adb","shell","input","keyevent","4"])
+
+	def on_ButtonMainMenu_clicked(self,widget):
+		call(["adb","shell","input","keyevent","82"])
+
+	def on_ButtonYellow_clicked(self,widget):
+		call(["adb","shell","input","keyevent","170"])
+
+	def on_ButtonBlue_clicked(self,widget):
+		call(["adb","shell","input","keyevent","4401"])
+
+	def on_ButtonGreen_clicked(self,widget):
+		call(["adb","shell","input","keyevent","4435"])
+
+	def on_ButtonRed_clicked(self,widget):
+		call(["adb","shell","input","keyevent","4402"])
+
+#Unused function for color buttons. To be implemented:
+	def color_swatch_new(self, str_color):
+		color = Gdk.color_parse(str_color)
+		rgba = Gdk.RGBA.from_color(color)
+		button = Gtk.Button()
+		area = Gtk.DrawingArea()
+		area.set_size_request(24, 24)
+		area.override_background_color(0, rgba)
+		button.add(area)
+		return button
+
+#Second class for first window to call remote window if adb is connected properly
+#To be Done:
+#Second class is not required. Try to get it done by same class
+#Remove global Entry widget and try to set a id to it so that different functions can use it
+#Add more flexible options like
+# a. Clean Launch
+# b. Key costomization
+# c. Add a new remote (maybe! :D)
+# d. Find more use cases for first screen
+
+class FirstScreen(Gtk.Window):
+	entry = Gtk.Entry()
+	def __init__(self):
+		Gtk.Window.__init__(self,title="Remote")
+		Gtk.Window.resize(self,550,150)
+		Gtk.Window.move(self,300,250)
+
+#Superbox for first screen
+		superbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+#Label for header		
+		headlabel = Gtk.Label("LeTV ADB")
+		headlabel.modify_font(Pango.FontDescription('Arial Black'))
+		superbox.pack_start(headlabel,True,True,1)
+
+#Buttonbox 1
+		buttonbox = Gtk.ButtonBox()
+		button=Gtk.Button(label = "Launch Application and Remote")
+		button.connect("clicked", self.on_button_click)
+		buttonbox.add(button)
+		superbox.pack_start(buttonbox,True,True,1)
+#Innerbox in superbox for Verify		
+		verifybox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
+		verifylabel = Gtk.Label("First activity of application is :")
+		verifylabel.set_padding(10,0)
+		verifybox.pack_start(verifylabel,True,True,1)
+		self.entry.set_text("com.usdtv.app/.dpc.TvActivity")
+		verifybox.pack_start(self.entry,True,True,1)
+		superbox.pack_start(verifybox,True,True,1)
+		self.add(superbox)
+
+#Function to launch service and app		
+	def on_button_click(self,widget):
+		t= check_output(["adb","devices"])
+		if len(t) == 42:
+			call(["adb","root"])
+			call(["adb","remount"])
+			call(["adb","shell","stop","atsc"])
+			os.system("adb shell start_usdtvservice &") #Using system for spawning background service
+			call(["adb","shell","am","start","-S",self.entry.get_text()])
+			remote = Remote()
+			remote.connect("delete-event", Gtk.main_quit)
+			remote.show_all()
+			signal.signal(signal.SIGINT, signal.SIG_DFL) #To recieve signal ctrl+c properly and close application
+			self.hide()
+		else:
+			messagedialog = Gtk.MessageDialog(parent=self,flags=Gtk.DialogFlags.MODAL,type=Gtk.MessageType.WARNING,\
+				buttons=Gtk.ButtonsType.OK,\
+				message_format="Device is disconnected")
+			messagedialog.connect("response", self.dialog_response)
+			messagedialog.show()
+
+#To destroy Dialog box if pressed OK
+	def dialog_response(self,widget,respondid):
+		widget.destroy()
+
+
+#Calling First screen
+remote =  FirstScreen()
+remote.connect("delete-event", Gtk.main_quit)
+remote.show_all()
+signal.signal(signal.SIGINT, signal.SIG_DFL) #To recieve signal ctrl+c properly and close application
+Gtk.main()
+
